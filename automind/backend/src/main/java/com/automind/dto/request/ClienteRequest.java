@@ -15,7 +15,8 @@ public class ClienteRequest {
     @NotBlank @Email
     private String email;
 
-    @NotBlank @Pattern(regexp = "\\(\\d{2}\\)\\s?\\d{4,5}-\\d{4}", message = "Telefone inválido")
+    // Aceita apenas dígitos, sem máscara — a formatação fica no frontend
+    @NotBlank @Pattern(regexp = "\\d{10,11}", message = "Telefone deve conter 10 ou 11 dígitos (somente números)")
     private String telefone;
 
     @Size(max = 200)
