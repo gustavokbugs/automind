@@ -27,7 +27,7 @@ export default function VeiculosPage() {
 
   const salvar = useMutation({
     mutationFn: (f) => editId ? veiculosAPI.atualizar(editId, f) : veiculosAPI.criar(f),
-    onSuccess: () => { qc.invalidateQueries(['veiculos']); toast.success('Salvo!'); fechar() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['veiculos'] }); toast.success('Salvo!'); fechar() },
     onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro'),
   })
 

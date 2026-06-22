@@ -43,14 +43,14 @@ export default function RecomendacoesPage() {
   const gerar = useMutation({
     mutationFn: () => recomendacoesAPI.gerar(veiculoSelecionado.id),
     onSuccess: (data) => {
-      qc.invalidateQueries(['recomendacoes', veiculoSelecionado?.id])
+      qc.invalidateQueries({ queryKey: ['recomendacoes', veiculoSelecionado?.id] })
       toast.success(data.data.mensagem)
     },
   })
 
   const marcarVisualizada = useMutation({
     mutationFn: (id) => recomendacoesAPI.marcarVisualizada(id),
-    onSuccess: () => qc.invalidateQueries(['recomendacoes', veiculoSelecionado?.id]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recomendacoes', veiculoSelecionado?.id] }),
   })
 
   const veiculosFiltrados = veiculos?.filter(v =>

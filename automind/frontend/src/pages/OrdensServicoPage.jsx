@@ -47,24 +47,24 @@ export default function OrdensServicoPage() {
 
   const criar = useMutation({
     mutationFn: (f) => ordensAPI.criar(f),
-    onSuccess: () => { qc.invalidateQueries(['ordens']); toast.success('OS aberta!'); setModal(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ordens'] }); toast.success('OS aberta!'); setModal(false) },
     onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro'),
   })
 
   const concluir = useMutation({
     mutationFn: ({ id, data }) => ordensAPI.concluir(id, data),
-    onSuccess: () => { qc.invalidateQueries(['ordens']); toast.success('OS concluída!'); setConcluirModal(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ordens'] }); toast.success('OS concluída!'); setConcluirModal(null) },
     onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro'),
   })
 
   const cancelar = useMutation({
     mutationFn: (id) => ordensAPI.atualizarStatus(id, { status: 'CANCELADA' }),
-    onSuccess: () => { qc.invalidateQueries(['ordens']); toast.success('OS cancelada') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ordens'] }); toast.success('OS cancelada') },
   })
 
   const iniciar = useMutation({
     mutationFn: (id) => ordensAPI.atualizarStatus(id, { status: 'EM_ANDAMENTO' }),
-    onSuccess: () => { qc.invalidateQueries(['ordens']); toast.success('OS em andamento') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ordens'] }); toast.success('OS em andamento') },
   })
 
   const fmt = (v) => v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) : '—'

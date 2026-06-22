@@ -41,7 +41,9 @@ public class Peca {
     @Column(length = 80)
     private String fabricante;
 
+    // @Builder.Default garante que a peça nasça ativa ao usar o builder
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @Column(name = "criado_em", nullable = false, updatable = false)

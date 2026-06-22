@@ -32,7 +32,9 @@ public class Servico {
     @Column(name = "tempo_estimado_horas", precision = 4, scale = 1)
     private BigDecimal tempoEstimadoHoras;
 
+    // @Builder.Default garante que o serviço nasça ativo ao usar o builder
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @Column(name = "criado_em", nullable = false, updatable = false)

@@ -33,7 +33,9 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private PerfilUsuario perfil;
 
+    // @Builder.Default garante que o usuário nasça ativo ao usar o builder
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @Column(name = "criado_em", nullable = false, updatable = false)

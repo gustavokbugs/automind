@@ -24,7 +24,7 @@ export default function ClientesPage() {
   const salvar = useMutation({
     mutationFn: (f) => editId ? clientesAPI.atualizar(editId, f) : clientesAPI.criar(f),
     onSuccess: () => {
-      qc.invalidateQueries(['clientes'])
+      qc.invalidateQueries({ queryKey: ['clientes'] })
       toast.success(editId ? 'Cliente atualizado!' : 'Cliente cadastrado!')
       fechar()
     },
@@ -33,7 +33,7 @@ export default function ClientesPage() {
 
   const inativar = useMutation({
     mutationFn: (id) => clientesAPI.inativar(id),
-    onSuccess: () => { qc.invalidateQueries(['clientes']); toast.success('Cliente inativado') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clientes'] }); toast.success('Cliente inativado') },
   })
 
   const abrir = (cliente = null) => {

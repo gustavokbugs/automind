@@ -34,7 +34,10 @@ public class Cliente {
     @Column(length = 200)
     private String endereco;
 
+    // @Builder.Default é obrigatório: sem ele o Lombok ignora o "= true"
+    // ao usar o builder e o cliente nasceria inativo (default do boolean é false)
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @Column(name = "criado_em", nullable = false, updatable = false)

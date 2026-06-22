@@ -8,7 +8,9 @@ import OrcamentoAprovacao from '../components/portal/OrcamentoAprovacao'
 import MidiaTimeline from '../components/portal/MidiaTimeline'
 import ExplicacaoIA from '../components/portal/ExplicacaoIA'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+// Em produção (Docker/Nginx) usa URL relativa — o Nginx proxeia /api para o backend
+// Em dev local (vite dev server) o proxy do vite.config.js faz o mesmo
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 /**
  * Página principal do Portal do Cliente.

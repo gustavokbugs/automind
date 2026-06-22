@@ -24,13 +24,13 @@ export default function PecasPage() {
 
   const salvar = useMutation({
     mutationFn: (f) => editId ? pecasAPI.atualizar(editId, f) : pecasAPI.criar(f),
-    onSuccess: () => { qc.invalidateQueries(['pecas']); toast.success('Salvo!'); fechar() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pecas'] }); toast.success('Salvo!'); fechar() },
     onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro'),
   })
 
   const ajustar = useMutation({
     mutationFn: ({ id, qtd }) => pecasAPI.ajustarEstoque(id, qtd),
-    onSuccess: () => { qc.invalidateQueries(['pecas']); toast.success('Estoque ajustado'); setAjusteModal(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pecas'] }); toast.success('Estoque ajustado'); setAjusteModal(null) },
     onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro'),
   })
 

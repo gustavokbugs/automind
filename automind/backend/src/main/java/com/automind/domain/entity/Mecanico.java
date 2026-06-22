@@ -32,7 +32,9 @@ public class Mecanico {
     @Column(name = "valor_hora", precision = 10, scale = 2)
     private BigDecimal valorHora;
 
+    // @Builder.Default garante que o mecânico nasça ativo ao usar o builder
     @Column(nullable = false)
+    @Builder.Default
     private boolean ativo = true;
 
     @OneToMany(mappedBy = "mecanico", fetch = FetchType.LAZY)
