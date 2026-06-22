@@ -50,3 +50,7 @@ logs/
 # ---- Build artifacts ----
 automind/frontend/dist/
 automind/backend/target/
+
+# ---- Resíduos de ferramentas na raiz (não fazem parte do projeto) ----
+/package.json
+/package-lock.json
