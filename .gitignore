@@ -1,0 +1,52 @@
+# ===========================
+# AutoMind — .gitignore
+# ===========================
+
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# ---- IDE ----
+.idea/
+*.iml
+*.iws
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ---- Node / React ----
+node_modules/
+dist/
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Uploads (arquivos de mídia da OS) ----
+automind/backend/uploads/
+uploads/
+
+# ---- Variáveis de ambiente e segredos ----
+.env
+.env.local
+.env.*.local
+*.env
+
+# ---- Docker volumes e dados temporários ----
+postgres-data/
+pgdata/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Build artifacts ----
+automind/frontend/dist/
+automind/backend/target/
