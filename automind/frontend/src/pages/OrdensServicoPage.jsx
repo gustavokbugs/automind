@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ClipboardList, CheckCircle, X, ExternalLink } from 'lucide-react'
-import { ordensAPI, veiculosAPI, mecanicosAPI } from '../services/api'
+import { Plus, ClipboardList, CheckCircle, X, ExternalLink, Trash2, Wrench, Package } from 'lucide-react'
+import { ordensAPI, veiculosAPI, mecanicosAPI, servicosAPI, pecasAPI } from '../services/api'
 import { Table, Tr, Td } from '../components/ui/Table'
 import Modal from '../components/ui/Modal'
 import toast from 'react-hot-toast'
@@ -29,6 +29,8 @@ export default function OrdensServicoPage() {
   const [form, setForm] = useState({ veiculoId: '', mecanicoId: '', quilometragemEntrada: 0, observacoes: '', itens: [] })
   const [concluirModal, setConcluirModal] = useState(null)
   const [kmSaida, setKmSaida] = useState(0)
+  // Formulário do editor de itens (dentro do modal de detalhe)
+  const [itemForm, setItemForm] = useState({ tipo: 'SERVICO', refId: '', quantidade: 1, precoUnitario: '' })
 
   const { data, isLoading } = useQuery({
     queryKey: ['ordens', statusFiltro],
@@ -43,6 +45,17 @@ export default function OrdensServicoPage() {
   const { data: mecanicos } = useQuery({
     queryKey: ['mecanicos'],
     queryFn: () => mecanicosAPI.listar().then(r => r.data.dados || []),
+  })
+
+  // Catálogos usados no editor de itens da OS
+  const { data: servicos } = useQuery({
+    queryKey: ['servicos'],
+    queryFn: () => servicosAPI.listar().then(r => r.data.dados || []),
+  })
+
+  const { data: pecas } = useQuery({
+    queryKey: ['pecas-all'],
+    queryFn: () => pecasAPI.listar({ size: 999 }).then(r => r.data.dados?.content || []),
   })
 
   const criar = useMutation({
@@ -66,6 +79,47 @@ export default function OrdensServicoPage() {
     mutationFn: (id) => ordensAPI.atualizarStatus(id, { status: 'EM_ANDAMENTO' }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['ordens'] }); toast.success('OS em andamento') },
   })
+
+  const addItem = useMutation({
+    mutationFn: ({ osId, item }) => ordensAPI.adicionarItem(osId, item),
+    onSuccess: (resp) => {
+      setDetalheOS(resp.data.dados)               // mantém o modal em sincronia com o total novo
+      setItemForm({ tipo: 'SERVICO', refId: '', quantidade: 1, precoUnitario: '' })
+      qc.invalidateQueries({ queryKey: ['ordens'] })
+      toast.success('Item adicionado ao orçamento')
+    },
+    onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro ao adicionar item'),
+  })
+
+  const removeItem = useMutation({
+    mutationFn: ({ osId, itemId }) => ordensAPI.removerItem(osId, itemId),
+    onSuccess: (resp) => {
+      setDetalheOS(resp.data.dados)
+      qc.invalidateQueries({ queryKey: ['ordens'] })
+      toast.success('Item removido')
+    },
+    onError: (err) => toast.error(err.response?.data?.mensagem || 'Erro ao remover item'),
+  })
+
+  // Ao escolher um serviço/peça, preenche o preço sugerido automaticamente
+  const selecionarRef = (refId) => {
+    let preco = ''
+    if (refId) {
+      if (itemForm.tipo === 'SERVICO') preco = servicos?.find(s => s.id === Number(refId))?.precoBase ?? ''
+      else preco = pecas?.find(p => p.id === Number(refId))?.precoVenda ?? ''
+    }
+    setItemForm(f => ({ ...f, refId, precoUnitario: preco }))
+  }
+
+  const submeterItem = () => {
+    if (!itemForm.refId) { toast.error('Selecione um serviço ou peça'); return }
+    const item = {
+      quantidade: Number(itemForm.quantidade),
+      precoUnitario: Number(itemForm.precoUnitario),
+      ...(itemForm.tipo === 'SERVICO' ? { servicoId: Number(itemForm.refId) } : { pecaId: Number(itemForm.refId) }),
+    }
+    addItem.mutate({ osId: detalheOS.id, item })
+  }
 
   const fmt = (v) => v ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v) : '—'
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('pt-BR') : '—'
@@ -209,19 +263,94 @@ export default function OrdensServicoPage() {
               {detalheOS.observacoes && <div className="col-span-2"><span className="text-slate-400">Obs:</span> <span className="text-white">{detalheOS.observacoes}</span></div>}
               {detalheOS.diagnostico && <div className="col-span-2"><span className="text-slate-400">Diagnóstico:</span> <span className="text-white">{detalheOS.diagnostico}</span></div>}
             </div>
-            {detalheOS.itens?.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-2">Itens da OS</h4>
-                <div className="space-y-2">
-                  {detalheOS.itens.map(item => (
-                    <div key={item.id} className="flex justify-between text-sm p-2 bg-slate-800 rounded">
-                      <span className="text-slate-300">{item.servicoNome || item.pecaNome} × {item.quantidade}</span>
+            {/* Itens do orçamento — editáveis enquanto a OS não estiver concluída/cancelada */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-slate-300">Itens do orçamento</h4>
+                {['CONCLUIDA', 'CANCELADA'].includes(detalheOS.status) && (
+                  <span className="text-xs text-slate-500">OS finalizada — somente leitura</span>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {detalheOS.itens?.length > 0 ? detalheOS.itens.map(item => (
+                  <div key={item.id} className="flex justify-between items-center text-sm p-2 bg-slate-800 rounded">
+                    <span className="flex items-center gap-2 text-slate-300">
+                      {item.servicoId
+                        ? <Wrench size={13} className="text-blue-400" />
+                        : <Package size={13} className="text-amber-400" />}
+                      {item.servicoNome || item.pecaNome} × {item.quantidade}
+                      <span className="text-slate-500 text-xs">({fmt(item.precoUnitario)} un.)</span>
+                    </span>
+                    <span className="flex items-center gap-3">
                       <span className="text-green-400">{fmt(item.subtotal)}</span>
-                    </div>
+                      {!['CONCLUIDA', 'CANCELADA'].includes(detalheOS.status) && (
+                        <button
+                          onClick={() => removeItem.mutate({ osId: detalheOS.id, itemId: item.id })}
+                          disabled={removeItem.isPending}
+                          className="text-slate-500 hover:text-red-400 transition-colors"
+                          title="Remover item"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                )) : (
+                  <p className="text-sm text-slate-500 py-2">Nenhum item no orçamento ainda.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Formulário para adicionar item ao orçamento */}
+            {!['CONCLUIDA', 'CANCELADA'].includes(detalheOS.status) && (
+              <div className="border border-slate-700 rounded-lg p-3 space-y-3">
+                <p className="text-sm font-medium text-slate-300">Adicionar item</p>
+
+                {/* Alterna entre Serviço e Peça */}
+                <div className="flex gap-2">
+                  {['SERVICO', 'PECA'].map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setItemForm({ tipo: t, refId: '', quantidade: 1, precoUnitario: '' })}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${itemForm.tipo === t ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                    >
+                      {t === 'SERVICO' ? 'Serviço' : 'Peça'}
+                    </button>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-6">
+                    <label className="label">{itemForm.tipo === 'SERVICO' ? 'Serviço' : 'Peça'}</label>
+                    <select className="input" value={itemForm.refId} onChange={e => selecionarRef(e.target.value)}>
+                      <option value="">Selecione...</option>
+                      {itemForm.tipo === 'SERVICO'
+                        ? servicos?.map(s => <option key={s.id} value={s.id}>{s.nome} — {fmt(s.precoBase)}</option>)
+                        : pecas?.map(p => <option key={p.id} value={p.id}>{p.nome} ({p.quantidadeEstoque} em estoque) — {fmt(p.precoVenda)}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="label">Qtd</label>
+                    <input className="input" type="number" min={1} value={itemForm.quantidade}
+                      onChange={e => setItemForm(f => ({ ...f, quantidade: e.target.value }))} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="label">Preço un.</label>
+                    <input className="input" type="number" step="0.01" min="0.01" value={itemForm.precoUnitario}
+                      onChange={e => setItemForm(f => ({ ...f, precoUnitario: e.target.value }))} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <button type="button" onClick={submeterItem} disabled={addItem.isPending}
+                      className="btn-primary w-full flex items-center justify-center gap-1">
+                      <Plus size={14} /> Add
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
+
             <div className="flex justify-between items-center p-3 bg-slate-800 rounded-lg">
               <span className="text-slate-300 font-medium">Total</span>
               <span className="text-green-400 font-bold text-lg">{fmt(detalheOS.valorTotal)}</span>

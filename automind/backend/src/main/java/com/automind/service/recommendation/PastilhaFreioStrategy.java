@@ -24,7 +24,7 @@ public class PastilhaFreioStrategy implements RecomendacaoStrategy {
     @Override
     public Optional<RecomendacaoManutencao> avaliar(Veiculo veiculo, List<String> servicosRealizados) {
         Optional<LocalDateTime> ultimaOpt = ordemServicoRepository
-            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_PASTILHA_FREIO.name(), StatusOS.CONCLUIDA);
+            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_PASTILHA_FREIO, StatusOS.CONCLUIDA);
 
         boolean deveRecomendar = false;
 

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { Car, AlertCircle, Loader2 } from 'lucide-react'
 import { useSSE } from '../hooks/useSSE'
 import TimelineOS from '../components/portal/TimelineOS'
+import ResumoVisual from '../components/portal/ResumoVisual'
 import OrcamentoAprovacao from '../components/portal/OrcamentoAprovacao'
 import MidiaTimeline from '../components/portal/MidiaTimeline'
 import ExplicacaoIA from '../components/portal/ExplicacaoIA'
@@ -37,7 +38,8 @@ export default function PortalClientePage() {
     try {
       setLoading(true)
       const { data } = await axios.get(`${API_BASE}/public/os/${token}`)
-      setOs(data.data)
+      // O backend envelopa a resposta em ApiResponse: { sucesso, dados, ... }
+      setOs(data.dados)
     } catch (err) {
       setErro('Link inválido ou OS não encontrada. Verifique o link enviado pela oficina.')
     } finally {
@@ -53,6 +55,10 @@ export default function PortalClientePage() {
     },
     'orcamento-aprovado': () => {
       setOs(prev => prev ? { ...prev, orcamentoAprovado: true } : prev)
+    },
+    'orcamento-atualizado': () => {
+      // O atendente alterou os itens — recarrega para refletir o novo orçamento
+      buscarOS()
     },
     'midia-adicionada': () => {
       // Quando chega nova mídia, busca os dados completos para ter a URL
@@ -159,6 +165,9 @@ export default function PortalClientePage() {
             )}
           </div>
         </div>
+
+        {/* Resumo visual — gráficos de progresso e orçamento (estilo dashboard) */}
+        <ResumoVisual os={os} />
 
         {/* Linha do tempo do progresso */}
         <TimelineOS status={os.status} />

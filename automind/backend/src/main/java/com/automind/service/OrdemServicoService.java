@@ -7,7 +7,6 @@ import com.automind.dto.response.OrdemServicoResponse;
 import com.automind.exception.BusinessException;
 import com.automind.exception.ResourceNotFoundException;
 import com.automind.repository.*;
-import com.automind.util.NumeroOSGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 public class OrdemServicoService {
 
     private final OrdemServicoRepository ordemServicoRepository;
+    private final ItemOrdemServicoRepository itemOrdemServicoRepository;
     private final VeiculoService veiculoService;
     private final MecanicoRepository mecanicoRepository;
     private final ServicoRepository servicoRepository;
@@ -50,7 +52,7 @@ public class OrdemServicoService {
 
         // UUID gerado no @PrePersist da entidade — mas pode ser definido aqui também
         OrdemServico os = OrdemServico.builder()
-            .numero(NumeroOSGenerator.gerar())
+            .numero(gerarNumeroOS())
             .veiculo(veiculo)
             .quilometragemEntrada(request.getQuilometragemEntrada())
             .observacoes(request.getObservacoes())
@@ -77,6 +79,23 @@ public class OrdemServicoService {
         veiculo.setQuilometragemAtual(request.getQuilometragemEntrada());
 
         return toResponse(ordemServicoRepository.save(os));
+    }
+
+    /**
+     * Gera o número da OS no formato OS-yyyyMMdd-NNNN com sequência diária.
+     *
+     * A sequência é derivada do BANCO (maior número já existente para a data),
+     * e não de um contador em memória — isso evita colisão de chave única após
+     * reinício do backend (que zerava o contador e regerava OS-...-0001).
+     */
+    private String gerarNumeroOS() {
+        String data = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String prefixo = "OS-" + data + "-";
+        int proximaSequencia = ordemServicoRepository
+            .findTopByNumeroStartingWithOrderByNumeroDesc(prefixo)
+            .map(ultima -> Integer.parseInt(ultima.getNumero().substring(prefixo.length())) + 1)
+            .orElse(1);
+        return String.format("%s%04d", prefixo, proximaSequencia);
     }
 
     @Transactional
@@ -142,6 +161,69 @@ public class OrdemServicoService {
         );
 
         return toResponse(os);
+    }
+
+    /**
+     * Adiciona um item (serviço OU peça) ao orçamento de uma OS existente.
+     * Recalcula o valor total e avisa o Portal do Cliente via SSE.
+     * Não é permitido alterar OS já concluída ou cancelada.
+     */
+    @Transactional
+    public OrdemServicoResponse adicionarItem(Long osId, OrdemServicoRequest.ItemOSRequest req) {
+        OrdemServico os = buscarEntidade(osId);
+        validarEditavel(os);
+
+        boolean temServico = req.getServicoId() != null;
+        boolean temPeca = req.getPecaId() != null;
+        if (temServico == temPeca) {
+            throw new BusinessException("Informe exatamente um serviço OU uma peça por item");
+        }
+
+        // A OS já está gerenciada (carregada na transação). Persistimos o item
+        // diretamente para obter o ID na hora; o total é atualizado via dirty
+        // checking da OS gerenciada (sem merge, que causaria TransientObjectException).
+        ItemOrdemServico item = criarItem(req, os);
+        itemOrdemServicoRepository.save(item);
+        os.getItens().add(item);
+        os.calcularTotal();
+
+        notificarOrcamento(os);
+        return toResponse(os);
+    }
+
+    /**
+     * Remove um item do orçamento de uma OS existente e recalcula o total.
+     */
+    @Transactional
+    public OrdemServicoResponse removerItem(Long osId, Long itemId) {
+        OrdemServico os = buscarEntidade(osId);
+        validarEditavel(os);
+
+        boolean removido = os.getItens().removeIf(i -> itemId.equals(i.getId()));
+        if (!removido) {
+            throw new ResourceNotFoundException("Item não encontrado nesta OS: " + itemId);
+        }
+
+        // orphanRemoval=true na coleção de itens apaga a linha no flush da OS gerenciada
+        os.calcularTotal();
+
+        notificarOrcamento(os);
+        return toResponse(os);
+    }
+
+    /** Bloqueia edição de itens quando a OS já está finalizada. */
+    private void validarEditavel(OrdemServico os) {
+        if (os.getStatus() == StatusOS.CONCLUIDA || os.getStatus() == StatusOS.CANCELADA) {
+            throw new BusinessException("Não é possível alterar itens de uma OS "
+                + os.getStatus().name().toLowerCase().replace('_', ' '));
+        }
+    }
+
+    /** Notifica o Portal do Cliente que o orçamento mudou (para refazer o fetch). */
+    private void notificarOrcamento(OrdemServico os) {
+        BigDecimal total = os.getValorTotal() != null ? os.getValorTotal() : BigDecimal.ZERO;
+        sseEmitterService.notificar(os.getTokenPublico(), "orcamento-atualizado",
+            "{\"valorTotal\": " + total + "}");
     }
 
     @Transactional(readOnly = true)

@@ -75,6 +75,7 @@ public class OsPublicaDTO {
     @Builder
     public static class ItemPublicoDTO {
         private String descricao;   // Nome do serviço ou peça
+        private String tipo;        // "SERVICO" ou "PECA" — usado nos gráficos do portal
         private Integer quantidade;
         private BigDecimal precoUnitario;
         private BigDecimal subtotal;

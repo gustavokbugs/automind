@@ -78,6 +78,8 @@ export const ordensAPI = {
   buscarPorId: (id) => api.get(`/ordens-servico/${id}`),
   criar: (data) => api.post('/ordens-servico', data),
   atualizarStatus: (id, data) => api.patch(`/ordens-servico/${id}/status`, data),
+  adicionarItem: (id, item) => api.post(`/ordens-servico/${id}/itens`, item),
+  removerItem: (id, itemId) => api.delete(`/ordens-servico/${id}/itens/${itemId}`),
   concluir: (id, data) => api.post(`/ordens-servico/${id}/concluir`, data),
   historicoPorVeiculo: (veiculoId) => api.get(`/ordens-servico/veiculo/${veiculoId}/historico`),
 }

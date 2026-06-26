@@ -24,7 +24,7 @@ public class RevisaoGeralStrategy implements RecomendacaoStrategy {
     @Override
     public Optional<RecomendacaoManutencao> avaliar(Veiculo veiculo, List<String> servicosRealizados) {
         Optional<LocalDateTime> ultimaRevisaoOpt = ordemServicoRepository
-            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.REVISAO_GERAL.name(), StatusOS.CONCLUIDA);
+            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.REVISAO_GERAL, StatusOS.CONCLUIDA);
 
         boolean deveRevisar;
 

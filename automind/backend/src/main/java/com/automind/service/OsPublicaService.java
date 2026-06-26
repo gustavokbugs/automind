@@ -85,6 +85,7 @@ public class OsPublicaService {
                 .descricao(item.getServico() != null
                     ? item.getServico().getNome()
                     : item.getPeca() != null ? item.getPeca().getNome() : "Item")
+                .tipo(item.getServico() != null ? "SERVICO" : "PECA")
                 .quantidade(item.getQuantidade())
                 .precoUnitario(item.getPrecoUnitario())
                 .subtotal(item.getSubtotal())

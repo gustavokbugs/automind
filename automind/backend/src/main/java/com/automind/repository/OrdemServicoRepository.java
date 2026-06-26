@@ -2,6 +2,7 @@ package com.automind.repository;
 
 import com.automind.domain.entity.OrdemServico;
 import com.automind.domain.enums.StatusOS;
+import com.automind.domain.enums.TipoServico;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,15 @@ import java.util.Optional;
 @Repository
 public interface OrdemServicoRepository extends JpaRepository<OrdemServico, Long> {
     Optional<OrdemServico> findByNumero(String numero);
+
+    /**
+     * Retorna a OS de maior número para um prefixo (ex: "OS-20260625-").
+     * Como o sufixo é sequencial com zero-padding (%04d), a ordenação
+     * lexicográfica coincide com a numérica — usado para gerar o próximo
+     * número de OS a partir do banco (resistente a reinício do backend).
+     */
+    Optional<OrdemServico> findTopByNumeroStartingWithOrderByNumeroDesc(String prefixo);
+
     List<OrdemServico> findByVeiculoId(Long veiculoId);
     Page<OrdemServico> findByStatus(StatusOS status, Pageable pageable);
     long countByStatus(StatusOS status);
@@ -44,7 +54,7 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, Long
            "WHERE os.veiculo.id = :veiculoId AND s.tipo = :tipoServico AND os.status = :status")
     Optional<LocalDateTime> findUltimaDataServicoPorTipo(
         @Param("veiculoId") Long veiculoId,
-        @Param("tipoServico") String tipoServico,
+        @Param("tipoServico") TipoServico tipoServico,
         @Param("status") StatusOS status
     );
 

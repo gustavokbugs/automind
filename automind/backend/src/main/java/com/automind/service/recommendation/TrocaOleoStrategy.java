@@ -25,7 +25,7 @@ public class TrocaOleoStrategy implements RecomendacaoStrategy {
     @Override
     public Optional<RecomendacaoManutencao> avaliar(Veiculo veiculo, List<String> servicosRealizados) {
         Optional<LocalDateTime> ultimaTrocaOpt = ordemServicoRepository
-            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_OLEO.name(), StatusOS.CONCLUIDA);
+            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_OLEO, StatusOS.CONCLUIDA);
 
         boolean porKm = false;
         boolean porData = false;

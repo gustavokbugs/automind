@@ -1,7 +1,7 @@
 package com.automind.controller;
 
-import com.automind.domain.entity.RecomendacaoManutencao;
 import com.automind.dto.response.ApiResponse;
+import com.automind.dto.response.RecomendacaoResponse;
 import com.automind.service.RecomendacaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,8 +23,9 @@ public class RecomendacaoController {
 
     @PostMapping("/veiculo/{veiculoId}/gerar")
     @Operation(summary = "Gerar recomendações para um veículo")
-    public ResponseEntity<ApiResponse<List<RecomendacaoManutencao>>> gerar(@PathVariable Long veiculoId) {
-        List<RecomendacaoManutencao> recomendacoes = recomendacaoService.gerarERetornarRecomendacoes(veiculoId);
+    public ResponseEntity<ApiResponse<List<RecomendacaoResponse>>> gerar(@PathVariable Long veiculoId) {
+        List<RecomendacaoResponse> recomendacoes = recomendacaoService.gerarERetornarRecomendacoes(veiculoId)
+            .stream().map(RecomendacaoResponse::from).toList();
         return ResponseEntity.ok(ApiResponse.ok(
             recomendacoes.isEmpty() ? "Veículo em dia! Nenhuma recomendação necessária." : "Recomendações geradas",
             recomendacoes));
@@ -32,8 +33,10 @@ public class RecomendacaoController {
 
     @GetMapping("/veiculo/{veiculoId}")
     @Operation(summary = "Listar recomendações do veículo")
-    public ResponseEntity<ApiResponse<List<RecomendacaoManutencao>>> listar(@PathVariable Long veiculoId) {
-        return ResponseEntity.ok(ApiResponse.ok(recomendacaoService.listarPorVeiculo(veiculoId)));
+    public ResponseEntity<ApiResponse<List<RecomendacaoResponse>>> listar(@PathVariable Long veiculoId) {
+        List<RecomendacaoResponse> recomendacoes = recomendacaoService.listarPorVeiculo(veiculoId)
+            .stream().map(RecomendacaoResponse::from).toList();
+        return ResponseEntity.ok(ApiResponse.ok(recomendacoes));
     }
 
     @PatchMapping("/{id}/visualizar")

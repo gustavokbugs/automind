@@ -29,7 +29,7 @@ public class OrdemServico {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Número legível da OS (ex: "OS-20240612-001") gerado pelo NumeroOSGenerator */
+    /** Número legível da OS (ex: "OS-20240612-0001") gerado em OrdemServicoService.gerarNumeroOS() */
     @Column(nullable = false, unique = true, length = 20)
     private String numero;
 

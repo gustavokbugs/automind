@@ -23,7 +23,7 @@ public class CorreiaDentadaStrategy implements RecomendacaoStrategy {
     @Override
     public Optional<RecomendacaoManutencao> avaliar(Veiculo veiculo, List<String> servicosRealizados) {
         boolean jaTrocou = ordemServicoRepository
-            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_CORREIA_DENTADA.name(), StatusOS.CONCLUIDA)
+            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_CORREIA_DENTADA, StatusOS.CONCLUIDA)
             .isPresent();
 
         boolean kmAlto = veiculo.getQuilometragemAtual() >= INTERVALO_KM;

@@ -26,7 +26,7 @@ public class TrocaPneuStrategy implements RecomendacaoStrategy {
             && veiculo.getQuilometragemAtual() % INTERVALO_KM <= 5000;
 
         boolean semRegistro = ordemServicoRepository
-            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_PNEU.name(), StatusOS.CONCLUIDA)
+            .findUltimaDataServicoPorTipo(veiculo.getId(), TipoServico.TROCA_PNEU, StatusOS.CONCLUIDA)
             .isEmpty() && veiculo.getQuilometragemAtual() >= INTERVALO_KM;
 
         if (!precisaTrocar && !semRegistro) return Optional.empty();

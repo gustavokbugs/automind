@@ -1,7 +1,11 @@
 package com.automind.service;
 
-import com.automind.domain.entity.ItemOrdemServico;
 import com.automind.domain.entity.OrdemServico;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,15 +35,19 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class IaExplicacaoService {
 
     // Chave da API lida do application.yml — vazia por padrão (modo desenvolvimento)
     @Value("${ia.groq.api-key:}")
     private String groqApiKey;
 
-    // Modelo do Groq — llama3-8b-8192 é gratuito e rápido
-    @Value("${ia.groq.model:llama3-8b-8192}")
+    // Modelo do Groq — llama-3.1-8b-instant é gratuito, atual e rápido
+    @Value("${ia.groq.model:llama-3.1-8b-instant}")
     private String modelo;
+
+    // ObjectMapper do Spring — usado para montar e ler o JSON da API com segurança
+    private final ObjectMapper objectMapper;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
@@ -86,70 +94,63 @@ public class IaExplicacaoService {
     /**
      * Chama a API do Groq com o prompt montado.
      * A API do Groq é compatível com o formato da OpenAI (messages array).
+     *
+     * Tanto o corpo da requisição quanto a leitura da resposta usam Jackson,
+     * o que garante escaping correto de aspas, acentos e quebras de linha —
+     * o conteúdo gerado pela IA frequentemente contém esses caracteres.
      */
     private String chamarGroqApi(String listaServicos) throws Exception {
         String prompt = """
-            Você é um assistente de uma oficina mecânica.
-            Explique os seguintes serviços realizados em linguagem simples,
-            sem jargão técnico, para o dono do veículo que é um leigo.
-            Seja claro, direto e tranquilizador. Máximo de 4 linhas.
+            Você é um atendente de uma oficina mecânica falando diretamente com o
+            dono do veículo, que é um leigo. Explique os serviços abaixo em linguagem
+            simples e tranquilizadora, sem jargão técnico.
+
+            Regras importantes:
+            - Escreva um único parágrafo corrido, com no máximo 4 frases.
+            - NÃO use markdown, asteriscos, títulos, listas ou emojis.
+            - Não repita esta instrução; responda apenas com a explicação final.
 
             Serviços realizados:
             """ + listaServicos;
 
-        // Corpo da requisição no formato JSON da API do Groq/OpenAI
-        String requestBody = """
-            {
-              "model": "%s",
-              "messages": [{"role": "user", "content": %s}],
-              "max_tokens": 300,
-              "temperature": 0.7
-            }
-            """.formatted(modelo, escapeJson(prompt));
+        // Monta o corpo da requisição como árvore JSON (escaping seguro garantido pelo Jackson)
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", modelo);
+        body.put("max_tokens", 300);
+        body.put("temperature", 0.7);
+        ArrayNode messages = body.putArray("messages");
+        ObjectNode mensagem = messages.addObject();
+        mensagem.put("role", "user");
+        mensagem.put("content", prompt);
 
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
             .header("Authorization", "Bearer " + groqApiKey)
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
             .timeout(Duration.ofSeconds(30))
             .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            throw new RuntimeException("Groq API retornou status " + response.statusCode());
+            throw new RuntimeException("Groq API retornou status " + response.statusCode() + ": " + response.body());
         }
 
-        // Extrai o texto da resposta JSON sem depender de biblioteca externa
         return extrairConteudoResposta(response.body());
     }
 
     /**
      * Extrai o campo "content" da resposta JSON da API do Groq.
-     * Usamos parsing manual para não adicionar dependência de Jackson aqui.
-     * (Jackson já está disponível via Spring Boot mas é didático mostrar sem ele)
+     * Formato: {"choices":[{"message":{"content":"..."}}]}
      */
-    private String extrairConteudoResposta(String json) {
-        // A resposta tem formato: {"choices":[{"message":{"content":"..."}}]}
-        int start = json.indexOf("\"content\":\"") + 11;
-        int end = json.indexOf("\"", start);
-        if (start < 11 || end < 0) {
-            throw new RuntimeException("Formato de resposta inesperado da API");
+    private String extrairConteudoResposta(String json) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        JsonNode content = root.path("choices").path(0).path("message").path("content");
+        if (content.isMissingNode() || content.asText().isBlank()) {
+            throw new RuntimeException("Formato de resposta inesperado da API: " + json);
         }
-        return json.substring(start, end)
-            .replace("\\n", "\n")
-            .replace("\\\"", "\"")
-            .trim();
-    }
-
-    /** Escapa aspas e quebras de linha para inserir no JSON */
-    private String escapeJson(String text) {
-        return "\"" + text
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "") + "\"";
+        return content.asText().trim();
     }
 
     /** Texto padrão usado quando a API não está configurada */

@@ -50,6 +50,22 @@ public class OrdemServicoController {
         return ResponseEntity.ok(ApiResponse.ok(ordemServicoService.listar(status, pageable)));
     }
 
+    @PostMapping("/{id}/itens")
+    @Operation(summary = "Adicionar item (serviço ou peça) ao orçamento da OS")
+    public ResponseEntity<ApiResponse<OrdemServicoResponse>> adicionarItem(
+        @PathVariable Long id,
+        @Valid @RequestBody OrdemServicoRequest.ItemOSRequest item) {
+        return ResponseEntity.ok(ApiResponse.ok("Item adicionado", ordemServicoService.adicionarItem(id, item)));
+    }
+
+    @DeleteMapping("/{id}/itens/{itemId}")
+    @Operation(summary = "Remover item do orçamento da OS")
+    public ResponseEntity<ApiResponse<OrdemServicoResponse>> removerItem(
+        @PathVariable Long id,
+        @PathVariable Long itemId) {
+        return ResponseEntity.ok(ApiResponse.ok("Item removido", ordemServicoService.removerItem(id, itemId)));
+    }
+
     @PatchMapping("/{id}/status")
     @Operation(summary = "Atualizar status da OS")
     public ResponseEntity<ApiResponse<OrdemServicoResponse>> atualizarStatus(
