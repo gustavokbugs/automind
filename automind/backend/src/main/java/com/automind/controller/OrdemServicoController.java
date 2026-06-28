@@ -27,8 +27,15 @@ import java.util.Map;
 @Tag(name = "Ordens de Serviço", description = "Gestão completa de OS")
 public class OrdemServicoController {
 
+    /**
+     * Service que contém toda a lógica de criação, atualização e fechamento de ordens de serviço.
+     */
     private final OrdemServicoService ordemServicoService;
 
+    /**
+     * Cria/abre uma nova OS a partir do `OrdemServicoRequest`.
+     * Retorna o DTO `OrdemServicoResponse` com dados calculados (total do orçamento, itens, status).
+     */
     @PostMapping
     @Operation(summary = "Abrir ordem de serviço")
     public ResponseEntity<ApiResponse<OrdemServicoResponse>> criar(@Valid @RequestBody OrdemServicoRequest request) {
@@ -47,6 +54,7 @@ public class OrdemServicoController {
     public ResponseEntity<ApiResponse<Page<OrdemServicoResponse>>> listar(
         @RequestParam(required = false) StatusOS status,
         @PageableDefault(size = 10, sort = "abertaEm") Pageable pageable) {
+        // lista OS com filtragem opcional por `StatusOS` e paginação
         return ResponseEntity.ok(ApiResponse.ok(ordemServicoService.listar(status, pageable)));
     }
 
@@ -55,6 +63,7 @@ public class OrdemServicoController {
     public ResponseEntity<ApiResponse<OrdemServicoResponse>> adicionarItem(
         @PathVariable Long id,
         @Valid @RequestBody OrdemServicoRequest.ItemOSRequest item) {
+        // adiciona serviço/peça ao orçamento da OS; service recalcula valores
         return ResponseEntity.ok(ApiResponse.ok("Item adicionado", ordemServicoService.adicionarItem(id, item)));
     }
 
@@ -71,6 +80,7 @@ public class OrdemServicoController {
     public ResponseEntity<ApiResponse<OrdemServicoResponse>> atualizarStatus(
         @PathVariable Long id,
         @RequestBody Map<String, String> body) {
+        // converte a string recebida para o enum StatusOS; lançará IllegalArgumentException se inválido
         StatusOS novoStatus = StatusOS.valueOf(body.get("status"));
         String diagnostico = body.get("diagnostico");
         return ResponseEntity.ok(ApiResponse.ok(ordemServicoService.atualizarStatus(id, novoStatus, diagnostico)));
@@ -81,6 +91,7 @@ public class OrdemServicoController {
     public ResponseEntity<ApiResponse<OrdemServicoResponse>> concluir(
         @PathVariable Long id,
         @RequestBody Map<String, Object> body) {
+        // recupera quilometragem e diagnostico do body (tipagem dinâmica via Map)
         Integer kmSaida = (Integer) body.get("quilometragemSaida");
         String diagnostico = (String) body.get("diagnostico");
         return ResponseEntity.ok(ApiResponse.ok("OS concluída", ordemServicoService.concluir(id, kmSaida, diagnostico)));

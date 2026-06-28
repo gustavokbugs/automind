@@ -18,15 +18,17 @@ import java.util.List;
 @SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "Serviços", description = "Catálogo de serviços")
 public class ServicoController {
-
+    /** Serviço de catálogo de serviços (descrição, preço padrão, ativos/inativos). */
     private final ServicoService servicoService;
 
+    /** Lista serviços ativos disponíveis para orçamento. */
     @GetMapping
     @Operation(summary = "Listar serviços ativos")
     public ResponseEntity<ApiResponse<List<Servico>>> listar() {
         return ResponseEntity.ok(ApiResponse.ok(servicoService.listar()));
     }
 
+    /** Busca um serviço pelo seu ID (entidade completa). */
     @GetMapping("/{id}")
     @Operation(summary = "Buscar serviço por ID")
     public ResponseEntity<ApiResponse<Servico>> buscarPorId(@PathVariable Long id) {

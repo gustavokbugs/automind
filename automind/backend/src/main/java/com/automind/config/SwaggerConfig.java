@@ -14,6 +14,9 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI openAPI() {
+        // Configurações do OpenAPI/Swagger:
+        // - Informações da API (título, descrição, versão, contato)
+        // - Esquema de segurança Bearer para permitir teste de endpoints autenticados via UI
         return new OpenAPI()
             .info(new Info()
                 .title("AutoMind API")

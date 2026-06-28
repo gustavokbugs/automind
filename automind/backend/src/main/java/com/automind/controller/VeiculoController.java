@@ -25,8 +25,10 @@ import java.util.List;
 @Tag(name = "Veículos", description = "Gestão de veículos")
 public class VeiculoController {
 
+    /** Serviço que gerencia veículos (vínculo com cliente, histórico, validações). */
     private final VeiculoService veiculoService;
 
+    /** Cadastra um veículo para um cliente; valida campos obrigatórios. */
     @PostMapping
     @Operation(summary = "Cadastrar veículo")
     public ResponseEntity<ApiResponse<VeiculoResponse>> criar(@Valid @RequestBody VeiculoRequest request) {
@@ -52,12 +54,14 @@ public class VeiculoController {
     public ResponseEntity<ApiResponse<Page<VeiculoResponse>>> listar(
         @RequestParam(required = false) String termo,
         @PageableDefault(size = 10, sort = "modelo") Pageable pageable) {
+        // suporta filtro por termo (placa, modelo) e paginação
         return ResponseEntity.ok(ApiResponse.ok(veiculoService.listar(termo, pageable)));
     }
 
     @GetMapping("/cliente/{clienteId}")
     @Operation(summary = "Listar veículos por cliente")
     public ResponseEntity<ApiResponse<List<VeiculoResponse>>> listarPorCliente(@PathVariable Long clienteId) {
+        // lista veículos pertencentes ao cliente informado
         return ResponseEntity.ok(ApiResponse.ok(veiculoService.listarPorCliente(clienteId)));
     }
 }

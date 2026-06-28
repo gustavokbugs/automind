@@ -15,6 +15,9 @@ public class UserDetailsConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
+        // Bean usado pelo Spring Security para carregar dados do usuário durante autenticação.
+        // Procura o usuário pelo email (utilizado como username) e lança `UsernameNotFoundException`
+        // quando não encontrado, comportamento esperado pelo framework.
         return email -> usuarioRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
     }

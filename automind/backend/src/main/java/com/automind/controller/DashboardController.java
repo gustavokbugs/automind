@@ -18,9 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "Dashboard", description = "Métricas e indicadores da oficina")
 public class DashboardController {
-
+    /** Serviço que calcula métricas e indicadores exibidos no painel. */
     private final DashboardService dashboardService;
 
+    /**
+     * Retorna os dados agregados do dashboard (totais, gráficos, KPIs).
+     * Delegação direta ao `DashboardService` que prepara o DTO `DashboardResponse`.
+     */
     @GetMapping
     @Operation(summary = "Obter dados do dashboard")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboard() {

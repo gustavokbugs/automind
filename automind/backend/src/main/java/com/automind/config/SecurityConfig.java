@@ -28,8 +28,10 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
+    /** Filtro que valida o token JWT antes do processamento das requisições. */
     private final JwtAuthFilter jwtAuthFilter;
+
+    /** Serviço que carrega usuários (email) para autenticação. */
     private final UserDetailsService userDetailsService;
 
     @Bean
@@ -41,9 +43,9 @@ public class SecurityConfig {
                 // Rotas liberadas sem autenticação:
                 .requestMatchers("/auth/**").permitAll()                          // Login
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Docs
-                .requestMatchers("/public/**").permitAll()                        // Portal do Cliente
-                .requestMatchers("/uploads/**").permitAll()                       // Arquivos de mídia
-                .anyRequest().authenticated()                                     // Todo o resto exige JWT
+                .requestMatchers("/public/**").permitAll()                        // Portal do Cliente (SSE público)
+                .requestMatchers("/uploads/**").permitAll()                       // Arquivos de mídia públicos
+                .anyRequest().authenticated()                                     // Todo o resto exige autenticação JWT
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
@@ -54,6 +56,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        // CORS permissivo por padrão (desenvolvimento). Em produção restrinja origins.
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

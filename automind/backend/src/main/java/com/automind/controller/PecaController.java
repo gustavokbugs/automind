@@ -26,8 +26,10 @@ import java.util.Map;
 @Tag(name = "Peças", description = "Controle de estoque de peças")
 public class PecaController {
 
+    /** Serviço responsável por operações de peças (estoque, CRUD). */
     private final PecaService pecaService;
 
+    /** Cadastra uma nova peça no catálogo/estoque. Requer `ADMIN` ou `MECANICO`. */
     @PostMapping
     @Operation(summary = "Cadastrar peça")
     @PreAuthorize("hasAnyRole('ADMIN', 'MECANICO')")
@@ -54,6 +56,7 @@ public class PecaController {
     public ResponseEntity<ApiResponse<Page<Peca>>> listar(
         @RequestParam(required = false) String termo,
         @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
+        // busca e retorna página de peças; `termo` aplica filtro por nome/código
         return ResponseEntity.ok(ApiResponse.ok(pecaService.listar(termo, pageable)));
     }
 
@@ -62,6 +65,7 @@ public class PecaController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MECANICO')")
     public ResponseEntity<ApiResponse<Void>> ajustarEstoque(
         @PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        // ajusta o estoque em função do valor enviado em `quantidade` (pode ser positivo ou negativo)
         pecaService.ajustarEstoque(id, body.get("quantidade"));
         return ResponseEntity.ok(ApiResponse.ok("Estoque atualizado", null));
     }

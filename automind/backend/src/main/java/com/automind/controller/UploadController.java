@@ -85,7 +85,7 @@ public class UploadController {
         // Salva o arquivo em disco
         arquivo.transferTo(destino.toFile());
 
-        // Determina se é foto ou vídeo pelo tipo MIME
+        // Determina se é foto ou vídeo pelo tipo MIME (video/* → VIDEO, caso contrário FOTO)
         String tipo = arquivo.getContentType() != null && arquivo.getContentType().startsWith("video")
             ? "VIDEO" : "FOTO";
 
@@ -113,6 +113,7 @@ public class UploadController {
     }
 
     private String getExtensao(String nomeOriginal) {
+        // retorna a extensão incluindo o ponto, ou `.bin` quando desconhecida
         if (nomeOriginal == null || !nomeOriginal.contains(".")) return ".bin";
         return nomeOriginal.substring(nomeOriginal.lastIndexOf("."));
     }
